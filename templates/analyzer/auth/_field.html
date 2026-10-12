@@ -1,0 +1,11 @@
+{# Champ de formulaire d'authentification. Usage : {% include "analyzer/auth/_field.html" with field=form.email %} #}
+<div class="form-group">
+    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text and show_help %}
+        <div class="form-text">{{ field.help_text|safe }}</div>
+    {% endif %}
+    {% for error in field.errors %}
+        <div class="field-error">{{ error }}</div>
+    {% endfor %}
+</div>

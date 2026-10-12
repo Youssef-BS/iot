@@ -1,0 +1,31 @@
+{% extends "analyzer/base.html" %}
+
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="auth">
+    <aside class="auth-aside">
+        <div>
+            <span class="eyebrow" style="color:#6ee7b7">AIDE-IoT</span>
+            <h2>Une alimentation dimensionnée sur la consommation réelle de votre dispositif.</h2>
+            <p>
+                Décrivez vos composants et votre programme : la plateforme établit
+                le bilan énergétique et justifie chaque recommandation.
+            </p>
+        </div>
+
+        <ul class="auth-points">
+            <li>Bilan en mAh et Wh par jour, calculé de façon déterministe</li>
+            <li>Ensoleillement du site issu de PVGIS</li>
+            <li>Vérification du matériel existant avant tout remplacement</li>
+            <li>Explications par des agents IA locaux, avec sources citées</li>
+        </ul>
+    </aside>
+
+    <section class="auth-main">
+        <div class="auth-card">
+            {% block auth_content %}{% endblock %}
+        </div>
+    </section>
+</div>
+{% endblock %}

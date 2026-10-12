@@ -1,0 +1,600 @@
+{% extends "analyzer/base.html" %}
+{% load static %}
+
+{% block title %}{{ project.name }} — Résultats · AIDE-IoT{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'analyzer/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="rp container">
+
+    <!-- 1. Projet étudié -->
+    <header class="rp-head">
+        <div>
+            <a class="rp-back" href="{% url 'project_list' %}">← Mes projets</a>
+            <h1>{{ project.name }}</h1>
+            <p class="rp-meta">
+                {{ project.location_city }}, {{ project.location_country }}
+                <span>·</span> {{ project.get_installation_type_display }}
+                <span>·</span> {{ project.components.count }} composant{{ project.components.count|pluralize }}
+                {% if battery %}<span>·</span> autonomie demandée {{ battery.autonomy_days_requested }} j{% endif %}
+                <span>·</span> {{ project.created_at|date:"d/m/Y" }}
+            </p>
+        </div>
+        <div class="rp-actions">
+            <button type="button" class="ui-btn ui-btn-ghost" onclick="window.print()">Exporter en PDF</button>
+        </div>
+    </header>
+
+    {% if not decision %}
+
+        <div class="rp-empty">
+            <h2>Aucun résultat pour ce projet</h2>
+            <p>L’analyse n’a pas encore été lancée avec la version actuelle de la plateforme.</p>
+            <a class="ui-btn" href="{% url 'wizard_review' project.id %}">Lancer l’analyse</a>
+        </div>
+
+    {% else %}
+
+    <!-- 2. Décision -->
+    <section class="rp-decision is-{{ decision.code }}" aria-label="Décision">
+        <div class="rp-decision-main">
+            <span class="rp-label">Décision</span>
+            <h2>{{ decision.title }}</h2>
+            {% if decision.code == 'adapted' %}
+                <p>Votre matériel couvre les besoins du dispositif. Vous pouvez le garder tel quel.</p>
+            {% elif decision.code == 'modify' %}
+                <p>Une partie du matériel n’est pas adaptée. On vous indique ci-dessous quoi changer, et seulement ça.</p>
+            {% elif decision.code == 'incomplete' %}
+                <p>Il manque des informations pour conclure. Complétez-les et relancez l’analyse :</p>
+                <ul>{% for item in decision.missing %}<li>{{ item }}</li>{% endfor %}</ul>
+            {% else %}
+                <p>Vous n’aviez pas encore de matériel : voici l’alimentation calculée pour votre dispositif.</p>
+            {% endif %}
+        </div>
+
+        {% if energy %}
+        <dl class="rp-decision-kpis">
+            <div><dt>Énergie / jour</dt><dd>{{ energy.energy_daily_wh|floatformat:4 }} <small>Wh</small></dd></div>
+            <div><dt>Charge / jour</dt><dd>{{ energy.energy_daily_mah|floatformat:2 }} <small>mAh</small></dd></div>
+            <div><dt>Courant de pointe</dt><dd>{{ energy.current_max_ma|floatformat:2 }} <small>mA</small></dd></div>
+        </dl>
+        {% endif %}
+    </section>
+
+    {% if ai_error %}
+        <div class="rp-note">{{ ai_error }} Le rapport ci-dessous reste complet : tous les calculs sont faits par le moteur Python.</div>
+    {% endif %}
+
+    {% if actions %}
+    <section class="rp-section">
+        <h2>Ce qu’on vous conseille</h2>
+        <ol class="rp-actions-list">
+            {% for item in actions %}<li>{{ item }}</li>{% endfor %}
+        </ol>
+    </section>
+    {% endif %}
+
+    {% if year_chart %}
+    <section class="rp-section">
+        <h2>Sur une année, le soleil suffit-il ?</h2>
+        <article class="rp-card rp-chart">
+            <p class="rp-chart-lead">
+                {% if year_chart.all_covered %}
+                    Oui. Chaque mois, le panneau produit plus que ce que le dispositif consomme.
+                    Le mois le plus juste est <strong>{{ year_chart.worst_month }}</strong>,
+                    avec {{ year_chart.worst_ratio|floatformat:1 }} fois la consommation.
+                {% else %}
+                    Pas tous les mois : les barres orange sont les mois où la production ne couvre pas la consommation.
+                    La batterie doit alors compenser.
+                {% endif %}
+            </p>
+            <svg viewBox="0 0 {{ year_chart.width }} {{ year_chart.height }}" role="img" aria-label="Production solaire prévue chaque mois comparée à la consommation journalière">
+                {% for tick in year_chart.ticks %}
+                    <line class="grid" x1="{{ year_chart.left }}" x2="{{ year_chart.right }}" y1="{{ tick.y }}" y2="{{ tick.y }}"/>
+                    <text class="tick" x="{{ year_chart.left|add:'-8' }}" y="{{ tick.y }}" text-anchor="end" dominant-baseline="middle">{{ tick.label }}</text>
+                {% endfor %}
+                {% for b in year_chart.bars %}
+                    <rect class="bar {% if b.short %}short{% endif %}" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.width }}" height="{{ b.height }}" rx="3"><title>{{ b.title }}</title></rect>
+                    <text class="tick" x="{{ b.label_x }}" y="{{ year_chart.label_y }}" text-anchor="middle">{{ b.month }}</text>
+                {% endfor %}
+                <line class="need" x1="{{ year_chart.left }}" x2="{{ year_chart.right }}" y1="{{ year_chart.consumption_y }}" y2="{{ year_chart.consumption_y }}"/>
+            </svg>
+            <div class="rp-legend">
+                <span><i class="sw bar"></i>Production prévue par jour (Wh)</span>
+                <span><i class="sw need"></i>Consommation par jour : {{ year_chart.consumption }}</span>
+            </div>
+        </article>
+    </section>
+    {% endif %}
+
+    <!-- 3. Alimentation à utiliser -->
+    {% if energy %}
+    <section class="rp-section">
+        <h2>Alimentation à utiliser</h2>
+
+        <div class="rp-grid-3">
+
+            <article class="rp-card">
+                <div class="rp-card-head">
+                    <h3>Batterie</h3>
+                    {% if hardware.battery %}
+                        <span class="rp-pill {% if hardware.battery.keep %}keep{% else %}new{% endif %}">
+                            {% if hardware.battery.keep %}À conserver{% else %}Recommandée{% endif %}
+                        </span>
+                    {% endif %}
+                </div>
+                {% with hw=hardware.battery %}
+                {% if hw %}
+                    <p class="rp-card-title">{{ hw.name }}</p>
+                    <dl class="rp-dl">
+                        <div><dt>Capacité</dt><dd>{{ hw.capacity_mah|floatformat:0 }} mAh</dd></div>
+                        <div><dt>Tension nominale</dt><dd>{{ hw.voltage_v|floatformat:2 }} V</dd></div>
+                        <div><dt>Énergie stockée</dt><dd>{{ hw.energy_wh|floatformat:2 }} Wh</dd></div>
+                        <div><dt>Autonomie sans soleil</dt><dd>{{ hw.autonomy_days|floatformat:1 }} j</dd></div>
+                        {% if hw.cycle_life %}<div><dt>Durée de vie</dt><dd>{{ hw.cycle_life }} cycles</dd></div>{% endif %}
+                        {% if hw.weight_g %}<div><dt>Masse estimée</dt><dd>{{ hw.weight_g|floatformat:0 }} g</dd></div>{% endif %}
+                        {% if hw.cost %}<div><dt>Coût indicatif</dt><dd>{{ hw.cost|floatformat:2 }} {{ hw.currency }}</dd></div>{% endif %}
+                    </dl>
+                    {% if battery.margin %}<p class="rp-margin">Marge {{ battery.margin|floatformat:2 }} · {{ battery.status_label }}</p>{% endif %}
+                {% else %}
+                    <p class="rp-muted">Non dimensionnée : données manquantes.</p>
+                {% endif %}
+                {% endwith %}
+                {% for check in battery.checks %}
+                    <p class="rp-check {% if check.ok %}ok{% else %}ko{% endif %}">{{ check.label }} : {{ check.detail }}</p>
+                {% endfor %}
+            </article>
+
+            <article class="rp-card">
+                <div class="rp-card-head">
+                    <h3>Panneau solaire</h3>
+                    {% if hardware.solar %}
+                        <span class="rp-pill {% if hardware.solar.keep %}keep{% else %}new{% endif %}">
+                            {% if hardware.solar.keep %}À conserver{% else %}Recommandé{% endif %}
+                        </span>
+                    {% endif %}
+                </div>
+                {% with hw=hardware.solar %}
+                {% if hw %}
+                    <p class="rp-card-title">{{ hw.name }}</p>
+                    <dl class="rp-dl">
+                        <div><dt>Puissance crête</dt><dd>{{ hw.power_w|floatformat:2 }} W{% if hw.count > 1 %} ({{ hw.count }} panneaux){% endif %}</dd></div>
+                        {% if hw.computed_w %}<div><dt>Puissance calculée</dt><dd>{{ hw.computed_w|floatformat:3 }} W</dd></div>{% endif %}
+                        <div><dt>Production, mois défavorable</dt><dd>{{ hw.daily_production_wh|floatformat:3 }} Wh/j</dd></div>
+                        {% if hw.surface_cm2 %}<div><dt>Surface estimée</dt><dd>{{ hw.surface_cm2|floatformat:0 }} cm²</dd></div>{% endif %}
+                        {% if hw.cost %}<div><dt>Coût indicatif</dt><dd>{{ hw.cost|floatformat:2 }} {{ hw.currency }}</dd></div>{% endif %}
+                    </dl>
+                    {% if solar.margin %}<p class="rp-margin">Marge {{ solar.margin|floatformat:2 }} · {{ solar.status_label }}</p>{% endif %}
+                {% elif solar_disabled %}
+                    <p class="rp-muted">Sans alimentation solaire (choix du projet).</p>
+                {% else %}
+                    <p class="rp-muted">Non dimensionné : données manquantes.</p>
+                {% endif %}
+                {% endwith %}
+                {% for check in solar.checks %}
+                    <p class="rp-check {% if check.ok %}ok{% else %}ko{% endif %}">{{ check.label }} : {{ check.detail }}</p>
+                {% endfor %}
+                {% if sun.worst %}
+                    <div class="rp-sun">
+                        <span>Ensoleillement de dimensionnement</span>
+                        <strong>{{ sun.worst|floatformat:2 }} h/j{% if sun.worst_month %} · {{ sun.worst_month }}{% endif %}</strong>
+                        <small>Moyenne annuelle {{ sun.annual|floatformat:2 }} h/j · {{ sun.source }}</small>
+                    </div>
+                {% endif %}
+            </article>
+
+            <article class="rp-card">
+                <div class="rp-card-head"><h3>Électronique d’alimentation</h3></div>
+                {% if electronics %}
+                    <dl class="rp-dl">
+                        <div><dt>Conversion</dt><dd>{{ electronics.converter|default:"—" }}</dd></div>
+                        {% if electronics.charger %}<div><dt>Chargeur</dt><dd>{{ electronics.charger }}</dd></div>{% endif %}
+                        <div><dt>Courant nominal</dt><dd>≥ {{ electronics.converter_rating_a|floatformat:3 }} A</dd></div>
+                        {% if electronics.max_quiescent_ua %}<div><dt>Courant de repos</dt><dd>≤ {{ electronics.max_quiescent_ua|floatformat:2 }} µA</dd></div>{% endif %}
+                        <div><dt>Tension de la charge</dt><dd>{{ electronics.load_voltage_v|floatformat:2 }} V</dd></div>
+                    </dl>
+                    <ul class="rp-chips">
+                        {% for item in electronics.protections %}<li>{{ item }}</li>{% endfor %}
+                    </ul>
+                    {% for item in electronics.warnings %}<p class="rp-alert">{{ item }}</p>{% endfor %}
+                {% endif %}
+            </article>
+
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Durée de vie estimée -->
+    {% if lifecycle %}
+    <section class="rp-section">
+        <h2>Durée de vie estimée</h2>
+
+        <div class="rp-grid-2">
+            <article class="rp-card">
+                <div class="rp-card-head"><h3>Batterie</h3></div>
+                {% with life=lifecycle.battery %}
+                {% if life.available %}
+                    <p class="rp-card-title">
+                        {% if life.rechargeable %}
+                            ≈ {{ life.life_years|floatformat:1 }} ans
+                        {% else %}
+                            À remplacer tous les {{ life.life_days|floatformat:0 }} jours
+                        {% endif %}
+                    </p>
+                    <dl class="rp-dl">
+                        <div><dt>Technologie</dt><dd>{{ life.technology }}</dd></div>
+                        {% if life.rechargeable %}
+                            <div><dt>Décharge quotidienne</dt><dd>{{ life.daily_depth_percent|floatformat:1 }} % de la capacité</dd></div>
+                            <div><dt>Cycles complets / an</dt><dd>{{ life.cycles_per_year|floatformat:1 }}</dd></div>
+                            <div><dt>Cycles garantis</dt><dd>{{ life.cycle_life }} → {% if life.cycling_years > 100 %}&gt; 100{% else %}{{ life.cycling_years|floatformat:1 }}{% endif %} ans</dd></div>
+                            <div><dt>Vieillissement calendaire</dt><dd>{{ life.calendar_years }} ans</dd></div>
+                            {% if life.end_autonomy_days %}<div><dt>Autonomie en fin de vie ({{ life.end_of_life_percent|floatformat:0 }} %)</dt><dd>{{ life.end_autonomy_days|floatformat:1 }} j</dd></div>{% endif %}
+                        {% else %}
+                            <div><dt>Remplacements / an</dt><dd>{{ life.replacements_per_year|floatformat:1 }}</dd></div>
+                        {% endif %}
+                        {% if lifecycle.battery_replacements is not None %}
+                            <div><dt>Remplacements sur {{ lifecycle.horizon_years }} ans</dt><dd>{{ lifecycle.battery_replacements }}</dd></div>
+                        {% endif %}
+                        {% if lifecycle.battery_replacement_cost %}
+                            <div><dt>Coût des remplacements</dt><dd>≈ {{ lifecycle.battery_replacement_cost|floatformat:2 }} {{ lifecycle.currency }}</dd></div>
+                        {% endif %}
+                    </dl>
+                    <p class="rp-caption">{{ life.detail }}</p>
+                    {% if life.end_autonomy_ok is False %}
+                        <p class="rp-alert">En fin de vie, l’autonomie passe sous les {{ battery.autonomy_days_requested }} jours demandés : prévoir le remplacement avant.</p>
+                    {% endif %}
+                {% elif life %}
+                    <p class="rp-muted">{{ life.detail }}</p>
+                {% else %}
+                    <p class="rp-muted">Aucune batterie retenue.</p>
+                {% endif %}
+                {% endwith %}
+            </article>
+
+            <article class="rp-card">
+                <div class="rp-card-head"><h3>Panneau solaire</h3></div>
+                {% with life=lifecycle.panel %}
+                {% if life %}
+                    <p class="rp-card-title">≈ {{ life.lifespan_years }} ans</p>
+                    <dl class="rp-dl">
+                        {% if life.technology %}<div><dt>Technologie</dt><dd>{{ life.technology }}</dd></div>{% endif %}
+                        <div><dt>Perte la 1<sup>re</sup> année</dt><dd>{{ life.first_year_loss_percent|floatformat:1 }} %</dd></div>
+                        <div><dt>Perte ensuite</dt><dd>{{ life.yearly_loss_percent|floatformat:2 }} % / an</dd></div>
+                        <div><dt>Puissance en fin de vie</dt><dd>{{ life.end_of_life_percent|floatformat:0 }} %</dd></div>
+                    </dl>
+                    {% if life.coverage_now is not None %}
+                        {% if life.covered_whole_life %}
+                            <p class="rp-check ok">Couvre la consommation au mois défavorable pendant toute sa durée de vie.</p>
+                        {% else %}
+                            <p class="rp-check ko">Ne couvre plus la consommation au mois défavorable après {{ life.covered_until_year }} an{{ life.covered_until_year|pluralize }}.</p>
+                        {% endif %}
+                    {% endif %}
+                    {% if not life.technology_known %}
+                        <p class="rp-muted">Technologie non précisée : valeurs moyennes utilisées.</p>
+                    {% endif %}
+                {% elif solar_disabled %}
+                    <p class="rp-muted">Sans alimentation solaire (choix du projet).</p>
+                {% else %}
+                    <p class="rp-muted">Aucun panneau retenu.</p>
+                {% endif %}
+                {% endwith %}
+            </article>
+        </div>
+
+        {% if lifecycle.timeline %}
+        <article class="rp-card rp-flush">
+            <h3>Évolution année par année</h3>
+            <div class="rp-table-wrap">
+                <table class="rp-table">
+                    <thead>
+                        <tr>
+                            <th>Année</th>
+                            <th class="num">Puissance du panneau</th>
+                            <th class="num">Production, mois défavorable</th>
+                            <th class="num">Couverture</th>
+                            {% if lifecycle.battery.rechargeable %}<th class="num">Batteries remplacées</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in lifecycle.timeline %}
+                        <tr>
+                            <td>{{ row.year }}</td>
+                            <td class="num">{{ row.panel_percent|floatformat:1 }} %</td>
+                            <td class="num">{{ row.production_wh|floatformat:3 }} Wh/j</td>
+                            <td class="num">{% if row.covered %}{{ row.coverage|floatformat:2 }} ×{% else %}<strong>{{ row.coverage|floatformat:2 }} ×</strong>{% endif %}</td>
+                            {% if lifecycle.battery.rechargeable %}<td class="num">{{ row.battery_replaced }}</td>{% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="rp-caption">
+                Couverture : production du mois le plus défavorable divisée par la consommation journalière (au moins 1 pour se passer de la batterie sur la durée).
+                {% if lifecycle.battery_replacement_years %}Remplacements de batterie prévus vers l’année {{ lifecycle.battery_replacement_years|join:" ; " }}.{% endif %}
+            </p>
+        </article>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    <!-- 4. Explication du bilan et de la décision -->
+    <section class="rp-section">
+        <h2>Pourquoi ce résultat</h2>
+
+        {% if energy %}
+        <div class="rp-kpis">
+            <div><span>Charge par jour</span><strong>{{ energy.energy_daily_mah|floatformat:3 }} mAh</strong></div>
+            <div><span>Énergie par jour</span><strong>{{ energy.energy_daily_wh|floatformat:4 }} Wh</strong></div>
+            <div><span>Courant moyen</span><strong>{{ energy.current_average_ma|floatformat:4 }} mA</strong></div>
+            <div><span>Courant minimal</span><strong>{{ energy.current_min_ma|floatformat:4 }} mA</strong></div>
+            <div><span>Courant de pointe</span><strong>{{ energy.current_max_ma|floatformat:2 }} mA</strong></div>
+            <div><span>Cycles par jour</span><strong>{{ energy.cycles_per_day|floatformat:2 }}</strong></div>
+        </div>
+        {% endif %}
+
+        <div class="rp-grid-2">
+            <article class="rp-card rp-ai">
+                <div class="rp-card-head"><h3>Analyste de consommation IoT</h3><span class="rp-pill ai">IA</span></div>
+                {% if consumption_ai %}
+                    {% if consumption_ai.explication_bilan %}<p>{{ consumption_ai.explication_bilan }}</p>{% endif %}
+                    {% if consumption_ai.phase_dominante %}<p><strong>Phase dominante.</strong> {{ consumption_ai.phase_dominante }}</p>{% endif %}
+                    {% if consumption_ai.phases %}
+                        <ol class="rp-phases">
+                            {% for phase in consumption_ai.phases %}<li><strong>{{ phase.nom }}</strong> — {{ phase.role }}</li>{% endfor %}
+                        </ol>
+                    {% endif %}
+                    {% if consumption_ai.observations_programme %}
+                        <h4>Dans le programme</h4>
+                        <ul class="rp-list">{% for item in consumption_ai.observations_programme %}<li>{{ item }}</li>{% endfor %}</ul>
+                    {% endif %}
+                {% else %}
+                    <p class="rp-muted">Explication non disponible.</p>
+                {% endif %}
+            </article>
+
+            <article class="rp-card rp-ai">
+                <div class="rp-card-head"><h3>Expert du système solaire</h3><span class="rp-pill ai">IA</span></div>
+                {% if solar_ai %}
+                    {% if solar_ai.explication_decision %}<p>{{ solar_ai.explication_decision }}</p>{% endif %}
+                    {% if solar_ai.justification_batterie %}<p><strong>Batterie.</strong> {{ solar_ai.justification_batterie }}</p>{% endif %}
+                    {% if solar_ai.justification_panneau %}<p><strong>Panneau.</strong> {{ solar_ai.justification_panneau }}</p>{% endif %}
+                    {% if solar_ai.justification_electronique %}<p><strong>Électronique.</strong> {{ solar_ai.justification_electronique }}</p>{% endif %}
+                {% else %}
+                    <p class="rp-muted">Explication non disponible.</p>
+                {% endif %}
+            </article>
+        </div>
+
+        {% if chart %}
+        <details class="rp-card rp-chart rp-details">
+            <summary>Courbe de consommation détaillée sur un cycle <span>pour aller plus loin</span></summary>
+            <svg viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="Courant total en fonction du temps sur un cycle, en plateaux">
+                {% for tick in chart.y_ticks %}
+                    <line class="grid" x1="{{ chart.left }}" x2="{{ chart.right }}" y1="{{ tick.y }}" y2="{{ tick.y }}"/>
+                    <text class="tick" x="{{ chart.label_x }}" y="{{ tick.y }}" text-anchor="end" dominant-baseline="middle">{{ tick.label }}</text>
+                {% endfor %}
+                {% for seg in chart.segments %}
+                    <rect class="area" x="{{ seg.x }}" y="{{ seg.y }}" width="{{ seg.width }}" height="{{ seg.height }}"><title>{{ seg.label }}</title></rect>
+                {% endfor %}
+                <path class="line" d="{{ chart.path }}"/>
+                <line class="axis" x1="{{ chart.left }}" x2="{{ chart.right }}" y1="{{ chart.bottom }}" y2="{{ chart.bottom }}"/>
+                <text class="tick" x="{{ chart.left }}" y="{{ chart.label_y }}">0</text>
+                <text class="tick" x="{{ chart.right }}" y="{{ chart.label_y }}" text-anchor="end">{{ chart.x_end_label }}</text>
+            </svg>
+            <p class="rp-caption">
+                Courant total (échelle logarithmique) ; survolez un plateau pour son niveau et sa durée.
+                {% if chart.compressed %}Les phases très brèves sont élargies pour rester visibles : l’axe du temps n’est pas proportionnel pour elles.{% endif %}
+            </p>
+        </details>
+        {% endif %}
+
+        {% if modes %}
+        <article class="rp-card rp-flush">
+            <h3>Répartition par mode</h3>
+            <div class="rp-table-wrap">
+                <table class="rp-table">
+                    <thead>
+                        <tr>
+                            <th>Composant</th><th>Mode</th>
+                            <th class="num">Courant</th><th class="num">Durée × n</th>
+                            <th class="num">Charge / cycle</th><th class="share">Part de l’énergie</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in modes %}
+                        <tr>
+                            <td>{{ m.component }}</td>
+                            <td>{{ m.name }}</td>
+                            <td class="num">{{ m.current_ma|floatformat:4 }} mA</td>
+                            <td class="num">{{ m.duration_ms|floatformat:0 }} ms × {{ m.count }}</td>
+                            <td class="num">{{ m.energy_mah|floatformat:6 }} mAh</td>
+                            <td class="share">
+                                <div class="rp-bar"><i style="width: {{ m.energy_percent|stringformat:'.1f' }}%"></i></div>
+                                <span>{{ m.energy_percent|floatformat:1 }} %</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+        {% endif %}
+    </section>
+
+    <!-- 5. Comparaison avant / après -->
+    {% if comparison %}
+    <section class="rp-section">
+        <h2>Comparaison avant / après</h2>
+        <article class="rp-card rp-flush">
+            <div class="rp-table-wrap">
+                <table class="rp-table">
+                    <thead><tr><th></th><th class="num">Matériel existant</th><th class="num">Recommandé</th></tr></thead>
+                    <tbody>
+                        {% for row in comparison %}
+                        <tr>
+                            <td>{{ row.label }}</td>
+                            {% if row.unit %}
+                                <td class="num">{{ row.before|floatformat:row.decimals }} {{ row.unit }}</td>
+                                <td class="num"><strong>{{ row.after|floatformat:row.decimals }} {{ row.unit }}</strong></td>
+                            {% else %}
+                                <td class="num">{{ row.before }}</td>
+                                <td class="num"><strong>{{ row.after }}</strong></td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    </section>
+    {% endif %}
+
+    <!-- Théorie et mesure -->
+    {% if energy %}
+    <section class="rp-section" id="mesure">
+        <h2>Calcul et mesure réelle</h2>
+
+        {% if measurement %}
+        <article class="rp-card rp-measure is-{{ measurement.level }}">
+            <div class="rp-measure-grid">
+                <div><span>Calculé</span><strong>{{ measurement.theoretical_ua|floatformat:1 }} µA</strong></div>
+                <div><span>Mesuré</span><strong>{{ measurement.measured_ua|floatformat:1 }} µA</strong></div>
+                <div><span>Écart</span><strong>{% if measurement.gap_percent > 0 %}+{% endif %}{{ measurement.gap_percent|floatformat:1 }} %</strong></div>
+            </div>
+            <p class="rp-measure-verdict">{{ measurement.verdict }}</p>
+            <ul class="rp-list">
+                <li>Avec la mesure, la consommation devient {{ measurement.measured_daily_mah|floatformat:2 }} mAh par jour.</li>
+                {% if measurement.battery %}
+                    <li>
+                        La batterie retenue tiendrait {{ measurement.battery.days|floatformat:0 }} jours sans soleil
+                        {% if measurement.battery.ok %}: toujours au-dessus des {{ measurement.battery.requested }} jours demandés.
+                        {% else %}: c’est moins que les {{ measurement.battery.requested }} jours demandés, la batterie est à revoir.{% endif %}
+                    </li>
+                {% endif %}
+                {% if measurement.solar %}
+                    <li>
+                        Au mois le plus juste ({{ measurement.solar.month }}), le panneau couvrirait
+                        {{ measurement.solar.coverage|floatformat:1 }} fois la consommation mesurée
+                        {% if measurement.solar.ok %}: il reste suffisant.{% else %}: il ne suffit plus, le panneau est à revoir.{% endif %}
+                    </li>
+                {% endif %}
+            </ul>
+            {% if project.measurement_notes %}<p class="rp-text">Conditions de mesure : {{ project.measurement_notes }}</p>{% endif %}
+        </article>
+        {% else %}
+        <p class="rp-muted mb-3">
+            Vous avez mesuré le courant moyen de votre carte (multimètre, PPK2, Otii…) ?
+            Saisissez-le : le rapport le compare au calcul et recalcule l’autonomie avec la valeur réelle.
+        </p>
+        {% endif %}
+
+        <form class="rp-card rp-measure-form" method="post" action="{% url 'report_measurement' project.id %}">
+            {% csrf_token %}
+            <div class="row g-2 align-items-end">
+                <div class="col-sm-3 col-6">
+                    <label class="form-label" for="measure-value">Courant moyen mesuré</label>
+                    <input class="form-control" id="measure-value" name="value" inputmode="decimal" required
+                           placeholder="ex. 174,9"
+                           value="{% if measurement %}{{ measurement.measured_ua|floatformat:1 }}{% endif %}">
+                </div>
+                <div class="col-sm-2 col-6">
+                    <label class="form-label" for="measure-unit">Unité</label>
+                    <select class="form-select" id="measure-unit" name="unit">
+                        <option value="ua" selected>µA</option>
+                        <option value="ma">mA</option>
+                    </select>
+                </div>
+                <div class="col-sm-5">
+                    <label class="form-label" for="measure-notes">Conditions de mesure <span class="muted fw-normal">(facultatif)</span></label>
+                    <input class="form-control" id="measure-notes" name="notes" maxlength="200"
+                           placeholder="ex. PPK2, 3 cycles de 10 min, 3,3 V" value="{{ project.measurement_notes }}">
+                </div>
+                <div class="col-sm-2 d-flex gap-2">
+                    <button class="btn btn-primary flex-fill" type="submit">Comparer</button>
+                    {% if measurement %}
+                        <button class="btn btn-outline-secondary" type="submit" name="action" value="clear" formnovalidate title="Retirer la mesure">×</button>
+                    {% endif %}
+                </div>
+            </div>
+            <p class="form-text mb-0 mt-2">
+                Mesurez sur plusieurs cycles complets pour inclure la veille et les émissions.
+                Écart jusqu’à 10 % : calcul confirmé ; au-delà de 25 % : un mode ou un composant est à revoir.
+            </p>
+        </form>
+    </section>
+    {% endif %}
+
+    <!-- 6. Preuves, sources, hypothèses et limites -->
+    <section class="rp-section">
+        <h2>Preuves, sources, hypothèses et limites</h2>
+
+        <div class="rp-grid-2">
+            <article class="rp-card">
+                <h3>Sources</h3>
+                <ul class="rp-list">
+                    {% for item in sources %}<li>{{ item }}</li>{% endfor %}
+                </ul>
+                {% if documents %}
+                    <h4>Extraits documentaires (RAG)</h4>
+                    {% for doc in documents %}
+                        <details class="rp-doc">
+                            <summary>
+                                <b>[{{ doc.id }}]</b> {{ doc.source }}{% if doc.page %}, p. {{ doc.page }}{% endif %}
+                                {% if doc.cited %}<span class="rp-pill ai">cité</span>{% endif %}
+                            </summary>
+                            <p>{{ doc.text }}</p>
+                        </details>
+                    {% endfor %}
+                {% endif %}
+            </article>
+
+            <article class="rp-card">
+                <h3>Hypothèses</h3>
+                <ul class="rp-list">{% for item in hypotheses %}<li>{{ item }}</li>{% endfor %}</ul>
+
+                <h4>Limites</h4>
+                <ul class="rp-list warn">{% for item in limits %}<li>{{ item }}</li>{% endfor %}</ul>
+
+                {% if battery.warnings or solar.warnings %}
+                    <h4>Avertissements du calcul</h4>
+                    <ul class="rp-list warn">
+                        {% for item in battery.warnings %}<li>{{ item }}</li>{% endfor %}
+                        {% for item in solar.warnings %}<li>{{ item }}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if consumption_ai.points_attention or solar_ai.points_attention %}
+                    <h4>Points d’attention (IA)</h4>
+                    <ul class="rp-list warn">
+                        {% for item in consumption_ai.points_attention %}<li>{{ item }}</li>{% endfor %}
+                        {% for item in solar_ai.points_attention %}<li>{{ item }}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if consumption_ai.donnees_manquantes or solar_ai.donnees_manquantes %}
+                    <h4>Données à compléter (IA)</h4>
+                    <ul class="rp-list">
+                        {% for item in consumption_ai.donnees_manquantes %}<li>{{ item }}</li>{% endfor %}
+                        {% for item in solar_ai.donnees_manquantes %}<li>{{ item }}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+            </article>
+        </div>
+
+        <p class="rp-footnote">
+            Les nombres sont calculés par le moteur Python déterministe.
+            {% if consumption_ai or solar_ai %}
+                Les explications sont rédigées par le modèle local {{ ai_model }} (Ollama), qui ne réalise aucun calcul.
+                {% if ai_removed %}{{ ai_removed }} phrase{{ ai_removed|pluralize }} contenant une valeur non issue du calcul {{ ai_removed|pluralize:"a,ont" }} été retirée{{ ai_removed|pluralize }}.{% endif %}
+            {% endif %}
+            Analyse effectuée en {{ report.duration_s|floatformat:1 }} s.
+        </p>
+    </section>
+
+    {% endif %}
+
+</div>
+{% endblock %}

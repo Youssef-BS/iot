@@ -1,0 +1,138 @@
+{% extends "analyzer/base.html" %}
+
+{% block title %}Méthode d’analyse · AIDE-IoT{% endblock %}
+
+{% block extra_css %}
+<style>
+    .intro-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 40px;
+    }
+
+    .intro-card {
+        padding: 22px;
+    }
+
+    .intro-card h2 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .intro-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: .9rem;
+        line-height: 1.6;
+    }
+
+    .timeline {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .timeline li {
+        position: relative;
+        display: grid;
+        grid-template-columns: 44px 1fr;
+        gap: 16px;
+        padding-bottom: 22px;
+    }
+
+    .timeline li:not(:last-child)::before {
+        position: absolute;
+        top: 40px;
+        bottom: 4px;
+        left: 19px;
+        width: 2px;
+        background: var(--border);
+        content: "";
+    }
+
+    .timeline-no {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        place-items: center;
+        border: 2px solid #a7f3d0;
+        border-radius: 50%;
+        background: var(--surface);
+        color: var(--primary);
+        font-weight: 800;
+    }
+
+    .timeline h3 {
+        margin: 8px 0 4px;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .timeline p {
+        margin: 0;
+        color: var(--muted);
+        font-size: .9rem;
+        line-height: 1.6;
+    }
+
+    @media (max-width: 767.98px) {
+        .intro-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page page-narrow container" style="max-width: 860px">
+
+    <div class="page-head">
+        <div>
+            <span class="eyebrow">Parcours guidé</span>
+            <h1>Comment préparer votre analyse énergétique</h1>
+            <p>
+                AIDE-IoT transforme la description de votre dispositif, ses composants et son
+                programme en un rapport de dimensionnement vérifiable.
+            </p>
+        </div>
+    </div>
+
+    <div class="intro-grid">
+        <article class="card-ui intro-card">
+            <h2>Les modes de fonctionnement font le calcul</h2>
+            <p>
+                Le courant, la durée et le nombre d’exécutions de chaque mode sont la base
+                exacte du bilan. Mesurez-les ou relevez-les dans les fiches techniques.
+            </p>
+        </article>
+        <article class="card-ui intro-card">
+            <h2>Le programme et les fiches expliquent</h2>
+            <p>
+                Le firmware aide les agents IA à identifier les phases du cycle ; les fiches
+                techniques sont citées comme sources. Aucun courant n’est inventé par l’IA.
+            </p>
+        </article>
+    </div>
+
+    <ol class="timeline">
+        <li><span class="timeline-no">1</span><div><h3>Projet et position</h3><p>Nom, lieu et coordonnées, pour récupérer l’ensoleillement réel du site.</p></div></li>
+        <li><span class="timeline-no">2</span><div><h3>Microcontrôleur</h3><p>Carte, tension et modes : actif, veille, deep sleep.</p></div></li>
+        <li><span class="timeline-no">3</span><div><h3>Capteurs et communications</h3><p>Mesures, émission et écoute radio (Wi-Fi, BLE, LoRa) avec leurs durées réelles.</p></div></li>
+        <li><span class="timeline-no">4</span><div><h3>Actionneurs et charges</h3><p>Moteurs, relais, éclairage et autres charges commandées.</p></div></li>
+        <li><span class="timeline-no">5</span><div><h3>Programme embarqué</h3><p>Collez ou importez le code pour décrire le comportement du dispositif.</p></div></li>
+        <li><span class="timeline-no">6</span><div><h3>Batterie et panneau solaire</h3><p>Demandez une recommandation ou faites vérifier le matériel que vous possédez déjà.</p></div></li>
+        <li><span class="timeline-no">7</span><div><h3>Vérification et lancement</h3><p>Contrôlez le récapitulatif, puis obtenez le rapport en une à deux minutes.</p></div></li>
+    </ol>
+
+    <div class="d-flex gap-2 mt-2">
+        {% if user.is_authenticated %}
+            <a class="ui-btn ui-btn-lg" href="{% url 'wizard_project' %}">Commencer l’analyse</a>
+        {% else %}
+            <a class="ui-btn ui-btn-lg" href="{% url 'login' %}?next={% url 'wizard_project' %}">Se connecter pour commencer</a>
+            <a class="ui-btn ui-btn-lg ui-btn-ghost" href="{% url 'register' %}">Créer un compte</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

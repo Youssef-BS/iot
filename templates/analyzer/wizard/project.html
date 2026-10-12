@@ -1,0 +1,33 @@
+{% extends "analyzer/wizard/base.html" %}
+
+{% block wizard_content %}
+<h2>Projet et position</h2>
+<p class="wizard-help">
+    Ces informations identifient votre étude. Les coordonnées servent à
+    récupérer l’ensoleillement réel du site auprès de PVGIS ; laissées vides,
+    elles sont déduites de la ville.
+</p>
+
+<form method="post">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
+    {% endif %}
+
+    <div class="row g-3">
+        {% for field in form %}
+            <div class="{% if field.name == 'description' %}col-12{% else %}col-md-6{% endif %}">
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="wizard-actions">
+        <a class="btn btn-outline-secondary" href="{% url 'workflow_intro' %}">Précédent</a>
+        <button class="btn btn-primary" type="submit">Continuer vers le microcontrôleur</button>
+    </div>
+</form>
+{% endblock %}

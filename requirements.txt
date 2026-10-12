@@ -1,0 +1,9 @@
+Django>=6.0.6,<6.1
+python-dotenv>=1.0
+requests>=2.32
+pypdf>=5.0
+Pillow>=11.0
+
+langchain-core>=0.3
+langchain-ollama>=0.3
+langchain-text-splitters>=0.3

@@ -1,0 +1,46 @@
+{% extends "analyzer/base.html" %}
+{% load static %}
+
+{% block title %}{{ project.name|default:"Nouvelle analyse" }} — Étape {{ wizard_current }} · AIDE-IoT{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'analyzer/css/wizard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="wizard container">
+
+    <aside class="wizard-aside" aria-label="Étapes de l’analyse">
+        <div class="wizard-project">
+            <span>Analyse guidée</span>
+            <strong>{{ project.name|default:"Nouveau projet IoT" }}</strong>
+            <div class="wizard-progress" role="progressbar" aria-valuenow="{{ wizard_percent }}" aria-valuemin="0" aria-valuemax="100">
+                <i style="width: {{ wizard_percent }}%"></i>
+            </div>
+        </div>
+
+        <ol class="stepper">
+            {% for step in wizard_steps %}
+                <li class="{{ step.state }}">
+                    {% if step.url and step.state != 'current' %}
+                        <a class="step-link" href="{{ step.url }}">
+                    {% else %}
+                        <span class="step-link" {% if step.state == 'current' %}aria-current="step"{% endif %}>
+                    {% endif %}
+                        <span class="step-dot">{{ step.number }}</span>
+                        {{ step.label }}
+                    {% if step.url and step.state != 'current' %}</a>{% else %}</span>{% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    </aside>
+
+    <section class="wizard-card">
+        <div class="wizard-card-body">
+            <span class="wizard-step-no">Étape {{ wizard_current }} sur {{ wizard_total }}</span>
+            {% block wizard_content %}{% endblock %}
+        </div>
+    </section>
+
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "analyzer/auth/base_auth.html" %}
+
+{% block title %}Vérification du code · AIDE-IoT{% endblock %}
+
+{% block auth_content %}
+<h1>Vérification du code</h1>
+<p class="lead">Un code à 6 chiffres a été envoyé à <strong>{{ email }}</strong>. Il est valable 10 minutes.</p>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="form-group">
+        <label for="code" class="form-label">Code de vérification</label>
+        <input type="text" id="code" name="code" class="form-control code-input"
+               maxlength="6" minlength="6" inputmode="numeric" pattern="[0-9]{6}"
+               autocomplete="one-time-code" placeholder="000000" required autofocus>
+    </div>
+
+    <button type="submit" class="ui-btn ui-btn-lg ui-btn-block">Vérifier le code</button>
+</form>
+
+<p class="auth-switch">
+    Code non reçu ? <a href="{% url 'forgot_password' %}">Demander un nouveau code</a>
+</p>
+{% endblock %}

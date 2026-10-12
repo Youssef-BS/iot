@@ -1,0 +1,34 @@
+{% extends "analyzer/auth/base_auth.html" %}
+
+{% block title %}Créer un compte · AIDE-IoT{% endblock %}
+
+{% block auth_content %}
+<h1>Créer un compte</h1>
+<p class="lead">Quelques secondes suffisent pour lancer votre première analyse.</p>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
+    {% endif %}
+
+    <div class="auth-grid-2">
+        {% include "analyzer/auth/_field.html" with field=form.first_name %}
+        {% include "analyzer/auth/_field.html" with field=form.last_name %}
+    </div>
+    {% include "analyzer/auth/_field.html" with field=form.email %}
+    {% include "analyzer/auth/_field.html" with field=form.password1 %}
+    {% include "analyzer/auth/_field.html" with field=form.password2 %}
+
+    <p class="form-text mb-3">
+        8 caractères minimum, pas uniquement des chiffres, ni trop proche de vos informations personnelles.
+    </p>
+
+    <button type="submit" class="ui-btn ui-btn-lg ui-btn-block">Créer mon compte</button>
+</form>
+
+<p class="auth-switch">
+    Déjà inscrit ? <a href="{% url 'login' %}">Se connecter</a>
+</p>
+{% endblock %}

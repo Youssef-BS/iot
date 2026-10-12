@@ -1,0 +1,31 @@
+{% extends "analyzer/auth/base_auth.html" %}
+
+{% block title %}Connexion · AIDE-IoT{% endblock %}
+
+{% block auth_content %}
+<h1>Connexion</h1>
+<p class="lead">Accédez à vos projets et à vos rapports de dimensionnement.</p>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors|striptags }}</div>
+    {% endif %}
+
+    {% for field in form %}
+        {% include "analyzer/auth/_field.html" %}
+    {% endfor %}
+
+    <div class="auth-row">
+        <span></span>
+        <a href="{% url 'forgot_password' %}">Mot de passe oublié ?</a>
+    </div>
+
+    <button type="submit" class="ui-btn ui-btn-lg ui-btn-block">Se connecter</button>
+</form>
+
+<p class="auth-switch">
+    Pas encore de compte ? <a href="{% url 'register' %}">Créer un compte</a>
+</p>
+{% endblock %}

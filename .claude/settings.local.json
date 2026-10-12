@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/c/Users/LENOVO/AppData/Local/Temp/claude/c--Users-LENOVO-Desktop-PROJET-IOT-main/dc199cce-6b3a-4cc9-a111-3536ef8d6d48/scratchpad\" && grep -o \".\\\\{12\\\\}nan.\\\\{8\\\\}\" dashboard.html | sort | uniq -c)",
+      "Read(//c/Users/LENOVO/AppData/Local/Temp/claude/c--Users-LENOVO-Desktop-PROJET-IOT-main/dc199cce-6b3a-4cc9-a111-3536ef8d6d48/scratchpad/**)",
+      "PowerShell($s=\"C:\\\\Users\\\\LENOVO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-LENOVO-Desktop-PROJET-IOT-main\\\\dc199cce-6b3a-4cc9-a111-3536ef8d6d48\\\\scratchpad\\\\shot\"; & \"$s\\\\shoot.ps1\" -Path \"/?anon=1\" -Name home -Height 3000)",
+      "PowerShell($s=\"C:\\\\Users\\\\LENOVO\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-LENOVO-Desktop-PROJET-IOT-main\\\\dc199cce-6b3a-4cc9-a111-3536ef8d6d48\\\\scratchpad\\\\shot\"; $id='2b9be512-03d2-4b85-a5d8-1f12c1cd03e1'; & \"$s\\\\shoot.ps1\" -Path \"/report/$id/\" -Name report2 -Height 1200; & \"$s\\\\shoot.ps1\" -Path \"/wizard/$id/energy/\" -Name wiz_energy -Height 1500; & \"$s\\\\shoot.ps1\" -Path \"/report/$id/\" -Name report_mobile -Width 390 -Height 1700)",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'runserver 8765' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }; Get-CimInstance Win32_Process -Filter \"Name='brave.exe'\" | Where-Object { $_.CommandLine -match 'brave-profile' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; \"done\")",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py makemigrations analyzer -n project_measurement)",
+      "PowerShell(.\\\\venv\\\\Scripts\\\\python.exe manage.py migrate -v 0)"
+    ]
+  }
+}

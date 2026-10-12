@@ -1,0 +1,83 @@
+{% extends "analyzer/base.html" %}
+
+{% block title %}Mes projets · AIDE-IoT{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pl { max-width: 1080px; padding-top: 32px; padding-bottom: 64px; }
+    .pl-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    .pl-head h1 { margin: 0; font-size: 1.8rem; font-weight: 800; letter-spacing: -.03em; }
+    .pl-head p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
+    .pl-list { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
+    .pl-row { display: grid; grid-template-columns: minmax(0, 1fr) 170px 120px 20px; align-items: center; gap: 20px; padding: 16px 20px; color: inherit; text-decoration: none; transition: background .15s; }
+    .pl-row + .pl-row { border-top: 1px solid var(--border-soft); }
+    .pl-row:hover { background: #fafbfc; color: inherit; }
+    .pl-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pl-meta { margin-top: 2px; color: var(--muted); font-size: .82rem; }
+    .pl-value { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .pl-value small { display: block; color: var(--muted); font-size: .72rem; font-weight: 500; }
+    .pl-status { justify-self: start; padding: 4px 10px; border-radius: 999px; font-size: .74rem; font-weight: 700; }
+    .pl-status.completed { background: #ecfdf3; color: #15803d; }
+    .pl-status.draft, .pl-status.pending { background: #f1f5f9; color: #475569; }
+    .pl-status.failed { background: #fef2f2; color: #b91c1c; }
+    .pl-arrow { color: var(--muted); }
+    .pl-empty { padding: 56px 24px; text-align: center; }
+    .pl-empty p { color: var(--muted); }
+    @media (max-width: 640px) {
+        .pl-head { flex-direction: column; align-items: flex-start; }
+        .pl-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
+        .pl-value { grid-column: 1; grid-row: 2; text-align: left; }
+        .pl-value small { display: inline; margin-left: 4px; }
+        .pl-arrow { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pl container">
+
+    <div class="pl-head">
+        <div>
+            <h1>Mes projets</h1>
+            <p>{{ projects|length }} projet{{ projects|length|pluralize }}</p>
+        </div>
+        <a href="{% url 'workflow_intro' %}" class="ui-btn">Nouvelle analyse</a>
+    </div>
+
+    <div class="pl-list">
+        {% for p in projects %}
+            <a class="pl-row" href="{% if p.status == 'completed' %}{% url 'report' p.id %}{% else %}{% url 'wizard_project_edit' p.id %}{% endif %}">
+                <div style="min-width:0">
+                    <div class="pl-name">{{ p.name }}</div>
+                    <div class="pl-meta">{{ p.location_city }}, {{ p.location_country }} · {{ p.created_at|date:"d/m/Y" }}</div>
+                </div>
+
+                <div class="pl-value">
+                    {% if p.status == 'completed' and p.result.daily_energy_mwh %}
+                        {{ p.result.daily_energy_mwh|floatformat:3 }} mWh
+                        <small>par jour</small>
+                    {% else %}
+                        <small>—</small>
+                    {% endif %}
+                </div>
+
+                <span class="pl-status {{ p.status }}">
+                    {% if p.status == 'completed' %}Terminé
+                    {% elif p.status == 'failed' %}Échec
+                    {% elif p.status == 'pending' %}En attente
+                    {% else %}Brouillon{% endif %}
+                </span>
+
+                <span class="pl-arrow" aria-hidden="true">›</span>
+            </a>
+        {% empty %}
+            <div class="pl-empty">
+                <h2 class="h5 fw-bold">Aucun projet pour l’instant</h2>
+                <p>Décrivez votre système IoT pour obtenir son bilan énergétique et son dimensionnement.</p>
+                <a href="{% url 'workflow_intro' %}" class="ui-btn">Créer un projet</a>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,456 @@
+/* ==========================================================
+   AIDE-IoT — parcours d'analyse guidé
+   ========================================================== */
+
+.wizard {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 28px;
+    max-width: 1180px;
+    padding-top: 32px;
+    padding-bottom: 72px;
+}
+
+/* ---------- Étapes ---------- */
+
+.wizard-aside {
+    position: sticky;
+    top: calc(var(--nav-h) + 24px);
+    align-self: start;
+}
+
+.wizard-project {
+    margin-bottom: 18px;
+}
+
+.wizard-project span {
+    color: var(--muted);
+    font-size: .74rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.wizard-project strong {
+    display: block;
+    margin-top: 2px;
+    overflow: hidden;
+    font-size: 1.05rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wizard-progress {
+    height: 4px;
+    margin-top: 12px;
+    border-radius: 999px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.wizard-progress i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--primary);
+}
+
+.stepper {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.stepper li {
+    position: relative;
+}
+
+.stepper li + li::before {
+    position: absolute;
+    top: -14px;
+    left: 21px;
+    width: 2px;
+    height: 14px;
+    background: var(--border);
+    content: "";
+}
+
+.stepper li.done + li::before {
+    background: var(--primary);
+}
+
+.step-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: .88rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+a.step-link:hover {
+    background: var(--surface);
+    color: var(--ink);
+}
+
+.step-dot {
+    display: inline-grid;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: .76rem;
+    font-weight: 700;
+}
+
+.done .step-dot {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: transparent;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='white'%3E%3Cpath d='M8.2 13.6 4.9 10.3l1.2-1.2 2.1 2.1 5.7-5.7 1.2 1.2z'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 18px;
+}
+
+.done .step-link {
+    color: var(--ink-2);
+}
+
+.current .step-link {
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 700;
+    box-shadow: var(--shadow);
+}
+
+.current .step-dot {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+/* ---------- Carte d'étape ---------- */
+
+.wizard-card {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.wizard-card-body {
+    padding: 28px 32px 0;
+}
+
+.wizard-step-no {
+    color: var(--primary);
+    font-size: .76rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.wizard-card h2 {
+    margin: 4px 0 6px;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+}
+
+.wizard-help {
+    max-width: 680px;
+    margin: 0 0 24px;
+    color: var(--muted);
+    font-size: .9rem;
+    line-height: 1.6;
+}
+
+.wizard-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 28px -32px 0;
+    padding: 18px 32px;
+    border-top: 1px solid var(--border);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    background: #fafbfc;
+}
+
+.wizard-actions .btn {
+    min-width: 150px;
+}
+
+/* ---------- Sections de formulaire ---------- */
+
+.form-section {
+    margin-bottom: 20px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.form-section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 16px;
+    font-size: .95rem;
+    font-weight: 700;
+}
+
+.form-section-title small {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.group-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 14px;
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.group-title::before {
+    width: 4px;
+    height: 18px;
+    border-radius: 4px;
+    background: var(--primary);
+    content: "";
+}
+
+.group-title.solar::before {
+    background: var(--energy);
+}
+
+.group-divider {
+    margin: 28px 0 20px;
+    border-top: 1px solid var(--border);
+}
+
+.hint {
+    padding: 12px 14px;
+    border: 1px solid #d1fae5;
+    border-radius: 10px;
+    background: var(--primary-soft);
+    color: var(--ink-2);
+    font-size: .86rem;
+    line-height: 1.55;
+}
+
+.upload-zone {
+    padding: 16px;
+    border: 1px dashed #b9c2cf;
+    border-radius: 12px;
+    background: #fafbfc;
+}
+
+.upload-zone .form-label {
+    margin-bottom: 8px;
+}
+
+/* ---------- Composants et modes ---------- */
+
+.component-section + .component-section {
+    margin-top: 28px;
+}
+
+.component-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.component-section-head h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.required-tag {
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-size: .7rem;
+    font-weight: 700;
+    vertical-align: middle;
+}
+
+.component-block {
+    margin-bottom: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    overflow: hidden;
+}
+
+.component-fields {
+    padding: 16px 16px 4px;
+}
+
+.component-block .modes {
+    margin: 12px 16px 0;
+    padding: 12px 12px 4px;
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+.modes-head,
+.mode-row {
+    display: grid;
+    grid-template-columns: 3fr 2fr 2fr 1.4fr 40px;
+    gap: 8px;
+}
+
+.modes-head {
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: .78rem;
+    font-weight: 600;
+}
+
+.mode-row {
+    margin-bottom: 8px;
+}
+
+.mode-row .form-control {
+    background: var(--surface);
+}
+
+.mode-row .remove-row {
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.component-tools {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 16px;
+}
+
+/* ---------- Vérification ---------- */
+
+.review-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.review-card {
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.review-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.review-head h3 {
+    margin: 0;
+    color: var(--muted);
+    font-size: .76rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.edit-link {
+    font-size: .8rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.review-data {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: .88rem;
+    line-height: 1.7;
+}
+
+.review-table-wrap {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow-x: auto;
+}
+
+.ok-text { color: var(--success); font-weight: 600; }
+.ko-text { color: var(--danger); }
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 991.98px) {
+    .wizard {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .wizard-aside {
+        position: static;
+    }
+
+    .stepper {
+        display: none;
+    }
+
+    .review-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .modes-head {
+        display: none;
+    }
+
+    .mode-row {
+        grid-template-columns: 1fr 1fr 40px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .mode-row > :first-child {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .wizard-card-body {
+        padding: 20px 18px 0;
+    }
+
+    .wizard-actions {
+        flex-direction: column-reverse;
+        margin: 24px -18px 0;
+        padding: 16px 18px;
+    }
+
+    .wizard-actions .btn {
+        width: 100%;
+    }
+}

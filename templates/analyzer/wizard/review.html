@@ -1,0 +1,155 @@
+{% extends "analyzer/wizard/base.html" %}
+
+{% block wizard_content %}
+<h2>Vérification avant analyse</h2>
+<p class="wizard-help">
+    Contrôlez les informations ci-dessous, puis lancez l’analyse : calcul
+    énergétique, ensoleillement PVGIS, recherche dans les fiches techniques et
+    explications des agents IA locaux.
+</p>
+
+<div class="review-grid">
+    <article class="review-card">
+        <div class="review-head">
+            <h3>Projet et position</h3>
+            <a class="edit-link" href="{% url 'wizard_project_edit' project.id %}">Modifier</a>
+        </div>
+        <p class="review-data">
+            <strong>{{ project.name }}</strong><br>
+            {{ project.location_city }}, {{ project.location_country }}<br>
+            {% if project.latitude != None and project.longitude != None %}
+                {{ project.latitude|floatformat:4 }}, {{ project.longitude|floatformat:4 }}<br>
+            {% else %}
+                <span class="muted">Coordonnées déduites de la ville</span><br>
+            {% endif %}
+            {{ project.get_installation_type_display }}
+        </p>
+    </article>
+
+    <article class="review-card">
+        <div class="review-head">
+            <h3>Programme</h3>
+            <a class="edit-link" href="{% url 'wizard_firmware' project.id %}">Modifier</a>
+        </div>
+        <p class="review-data">
+            {{ firmware.get_input_type_display }}<br>
+            {% if firmware.source_code %}<span class="ok-text">Code source fourni</span><br>{% endif %}
+            {% if firmware.code_file %}Fichier : {{ firmware.code_file.name }}<br>{% endif %}
+            {% if firmware.flowchart %}Organigramme fourni<br>{% endif %}
+            {% if not firmware.source_code and not firmware.code_file and not firmware.flowchart %}
+                <span class="muted">Aucun programme fourni</span>
+            {% endif %}
+        </p>
+    </article>
+
+    <article class="review-card">
+        <div class="review-head">
+            <h3>Alimentation</h3>
+            <a class="edit-link" href="{% url 'wizard_energy' project.id %}">Modifier</a>
+        </div>
+        <p class="review-data">
+            Batterie : {{ battery.get_objective_display }}
+            {% if battery.objective == 'verify' and battery.capacity_mah %}
+                ({{ battery.capacity_mah|floatformat:0 }} mAh{% if battery.nominal_voltage_v %}, {{ battery.nominal_voltage_v|floatformat:2 }} V{% endif %})
+            {% endif %}<br>
+            Autonomie : {{ battery.autonomy_days }} jour{{ battery.autonomy_days|pluralize }}<br>
+            Panneau : {{ solar.get_objective_display }}
+            {% if solar.objective == 'verify' and solar.panel_power_w %}({{ solar.panel_power_w|floatformat:2 }} W){% endif %}<br>
+            Fiche batterie :
+            {% if battery.battery_datasheet %}
+                <a class="ok-text" href="{{ battery.battery_datasheet.url }}" target="_blank" rel="noopener noreferrer">PDF fourni</a>
+            {% else %}
+                <span class="muted">non fournie</span>
+            {% endif %}
+        </p>
+    </article>
+</div>
+
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+    <h3 class="h6 fw-bold mb-0">Composants et modes de fonctionnement</h3>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'wizard_mcu' project.id %}">Microcontrôleur</a>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'wizard_peripherals' project.id %}">Capteurs et communications</a>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'wizard_actuators' project.id %}">Actionneurs</a>
+    </div>
+</div>
+
+<div class="review-table-wrap">
+    <table class="table-ui">
+        <thead>
+            <tr>
+                <th>Composant</th>
+                <th>Catégorie</th>
+                <th class="num">Tension</th>
+                <th>Mode</th>
+                <th class="num">Courant</th>
+                <th class="num">Durée</th>
+                <th class="num">Fois / cycle</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for component in components %}
+                {% for mode in component.modes.all %}
+                    <tr>
+                        {% if forloop.first %}
+                            <td rowspan="{{ component.modes.count }}"><strong>{{ component.name }}</strong></td>
+                            <td rowspan="{{ component.modes.count }}">{{ component.get_category_display }}</td>
+                            <td rowspan="{{ component.modes.count }}" class="num">
+                                {% if component.voltage %}{{ component.voltage|floatformat:2 }} V{% else %}<span class="muted">—</span>{% endif %}
+                            </td>
+                        {% endif %}
+                        <td>{{ mode.name }}</td>
+                        <td class="num">{{ mode.current_ma|floatformat:4 }} mA</td>
+                        <td class="num">{{ mode.duration_ms|floatformat:0 }} ms</td>
+                        <td class="num">{{ mode.count_per_cycle }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td><strong>{{ component.name }}</strong></td>
+                        <td>{{ component.get_category_display }}</td>
+                        <td class="num">{% if component.voltage %}{{ component.voltage|floatformat:2 }} V{% else %}—{% endif %}</td>
+                        <td colspan="4" class="ko-text">Aucun mode saisi : ce composant ne sera pas compté dans le bilan.</td>
+                    </tr>
+                {% endfor %}
+            {% empty %}
+                <tr><td colspan="7" class="ko-text">Aucun composant enregistré.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<form method="post" action="{% url 'project_analyze' %}" id="analysis-form">
+    {% csrf_token %}
+    <input type="hidden" name="draft_id" value="{{ project.id }}">
+    <input type="hidden" name="use_saved_components" value="1">
+    <input type="hidden" name="name" value="{{ project.name }}">
+    <input type="hidden" name="description" value="{{ project.description }}">
+    <input type="hidden" name="location_city" value="{{ project.location_city }}">
+    <input type="hidden" name="location_country" value="{{ project.location_country }}">
+    <input type="hidden" name="latitude" value="{{ project.latitude|default_if_none:''|stringformat:'s' }}">
+    <input type="hidden" name="longitude" value="{{ project.longitude|default_if_none:''|stringformat:'s' }}">
+    <input type="hidden" name="installation_type" value="{{ project.installation_type }}">
+    <input type="hidden" name="input_type" value="{{ firmware.input_type }}">
+    <textarea hidden name="source_code">{{ firmware.source_code }}</textarea>
+
+    <div class="hint mt-4" id="analysis-progress" hidden>
+        <span class="spinner-border spinner-border-sm me-2 text-primary" aria-hidden="true"></span>
+        Analyse en cours : calcul énergétique, données PVGIS, recherche documentaire puis
+        explications des agents IA locaux. Comptez 1 à 2 minutes ; ne fermez pas la page.
+    </div>
+
+    <div class="wizard-actions">
+        <a class="btn btn-outline-secondary" href="{% url 'wizard_energy' project.id %}">Précédent</a>
+        <button class="btn btn-primary" type="submit" id="analysis-submit">Lancer l’analyse complète</button>
+    </div>
+</form>
+
+<script>
+    document.getElementById('analysis-form').addEventListener('submit', function () {
+        var button = document.getElementById('analysis-submit');
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Analyse en cours…';
+        document.getElementById('analysis-progress').hidden = false;
+    });
+</script>
+{% endblock %}

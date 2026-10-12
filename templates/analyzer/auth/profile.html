@@ -1,0 +1,35 @@
+{% extends "analyzer/base.html" %}
+
+{% block title %}Mon profil · AIDE-IoT{% endblock %}
+
+{% block content %}
+<div class="page page-narrow container">
+    <div class="page-head">
+        <div>
+            <span class="eyebrow">Compte</span>
+            <h1>Mon profil</h1>
+        </div>
+    </div>
+
+    <div class="card-ui">
+        <div class="d-flex align-items-center gap-3 p-4 border-bottom">
+            <span class="avatar" style="width:52px;height:52px;font-size:1.2rem">{{ user.first_name|default:user.email|slice:":1" }}</span>
+            <div>
+                <div class="fw-bold fs-5">{{ user.first_name }} {{ user.last_name }}</div>
+                <div class="muted">{{ user.email }}</div>
+            </div>
+        </div>
+        <dl class="m-0 p-4" style="display:grid;grid-template-columns:160px 1fr;row-gap:12px">
+            <dt class="muted fw-semibold">Prénom</dt><dd class="m-0">{{ user.first_name|default:"—" }}</dd>
+            <dt class="muted fw-semibold">Nom</dt><dd class="m-0">{{ user.last_name|default:"—" }}</dd>
+            <dt class="muted fw-semibold">E-mail</dt><dd class="m-0">{{ user.email }}</dd>
+            <dt class="muted fw-semibold">Membre depuis</dt><dd class="m-0">{{ user.date_joined|date:"d/m/Y" }}</dd>
+        </dl>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+        <a class="ui-btn" href="{% url 'project_list' %}">Mes projets</a>
+        <a class="ui-btn ui-btn-ghost" href="{% url 'forgot_password' %}">Changer de mot de passe</a>
+    </div>
+</div>
+{% endblock %}

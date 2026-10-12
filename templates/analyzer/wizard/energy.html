@@ -1,0 +1,162 @@
+{% extends "analyzer/wizard/base.html" %}
+
+{% block wizard_content %}
+<h2>Batterie et panneau solaire</h2>
+<p class="wizard-help">
+    Pour chaque élément, demandez une recommandation ou faites vérifier le
+    matériel que vous avez déjà : il ne sera remplacé que si les calculs
+    le justifient. Vous pouvez par exemple vérifier un panneau et demander
+    une batterie.
+</p>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    {# ================= BATTERIE ================= #}
+    <div data-objective-block>
+        <h3 class="group-title">Batterie</h3>
+
+        {% for error in battery_form.non_field_errors %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endfor %}
+
+        <div class="form-section">
+            <div class="row g-3">
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.objective %}
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.autonomy_days %}
+            </div>
+        </div>
+
+        <div class="form-section" data-show-when="verify">
+            <p class="form-section-title">Votre batterie <small>caractéristiques connues</small></p>
+            <div class="row g-3">
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.chosen_model %}
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.chosen_technology %}
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.value_scope %}
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.nominal_voltage_v %}
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.capacity_mah %}
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.cells_series %}
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.cells_parallel %}
+            </div>
+        </div>
+
+        <div class="form-section">
+            <p class="form-section-title">Contraintes <small>facultatives</small></p>
+            <div class="row g-3">
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.battery_type %}
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.max_weight_g %}
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.max_volume_cm3 %}
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.max_budget %}
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.currency %}
+                {% include "analyzer/wizard/_energy_field.html" with field=battery_form.rechargeable_only %}
+            </div>
+        </div>
+
+        <div class="upload-zone">
+            <label class="form-label" for="battery_datasheet">
+                Fiche technique de la batterie <span class="muted fw-normal">— facultative</span>
+            </label>
+            <input type="file" class="form-control" id="battery_datasheet" name="battery_datasheet" accept=".pdf,application/pdf">
+            <div class="form-text mt-2">
+                PDF, 10 Mo maximum. Elle permet de vérifier le courant de décharge maximal
+                et sert de source citée dans le rapport.
+            </div>
+
+            {% if battery and battery.battery_datasheet %}
+                <div class="hint mt-3">
+                    Fiche enregistrée :
+                    <a href="{{ battery.battery_datasheet.url }}" target="_blank" rel="noopener noreferrer">consulter le PDF</a>.
+                    Choisissez un fichier uniquement pour la remplacer.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="group-divider"></div>
+
+    {# ================= PANNEAU SOLAIRE ================= #}
+    <div data-objective-block>
+        <h3 class="group-title solar">Panneau solaire</h3>
+
+        {% for error in solar_form.non_field_errors %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endfor %}
+
+        <div class="form-section">
+            <div class="row g-3">
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.objective %}
+            </div>
+        </div>
+
+        <div class="form-section" data-show-when="verify">
+            <p class="form-section-title">Votre panneau <small>caractéristiques connues</small></p>
+            <div class="row g-3">
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.chosen_model %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.chosen_technology %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.panel_power_w %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.panel_count %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.vmp_v %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.voc_v %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.imp_ma %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.isc_ma %}
+            </div>
+        </div>
+
+        <div class="form-section" data-show-when="recommend verify">
+            <p class="form-section-title">Emplacement du panneau</p>
+            <div class="row g-3">
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.placement %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.light_transmittance_percent %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.azimuth_deg col="col-md-3 col-6" %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.tilt_deg col="col-md-3 col-6" %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.shading_notes %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.lighting_notes %}
+            </div>
+        </div>
+
+        <div class="form-section" data-show-when="recommend verify">
+            <p class="form-section-title">Contraintes <small>facultatives</small></p>
+            <div class="row g-3">
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.panel_type %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.max_surface_cm2 %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.max_budget %}
+                {% include "analyzer/wizard/_energy_field.html" with field=solar_form.currency %}
+            </div>
+        </div>
+
+        <div class="hint" data-show-when="recommend verify">
+            L’ensoleillement du mois le plus défavorable est récupéré auprès de PVGIS
+            lors de l’analyse. Décrivez l’ombrage (arbres, bâtiments) et la poussière :
+            aucune perte inconnue n’est considérée comme nulle.
+        </div>
+    </div>
+
+    <div class="wizard-actions">
+        <a class="btn btn-outline-secondary" href="{% url 'wizard_firmware' project.id %}">Précédent</a>
+        <button class="btn btn-primary" type="submit">Vérifier le projet</button>
+    </div>
+</form>
+
+<style>
+    [data-show-when][hidden] { display: none !important; }
+</style>
+
+<script>
+    // Affiche les sections selon l'objectif choisi (recommander / vérifier / sans solaire).
+    (function () {
+        document.querySelectorAll('[data-objective-block]').forEach(function (block) {
+            var select = block.querySelector('select[name$="objective"]');
+            if (!select) return;
+
+            function sync() {
+                block.querySelectorAll('[data-show-when]').forEach(function (element) {
+                    element.hidden = element.getAttribute('data-show-when').split(' ').indexOf(select.value) === -1;
+                });
+            }
+
+            select.addEventListener('change', sync);
+            sync();
+        });
+    })();
+</script>
+{% endblock %}

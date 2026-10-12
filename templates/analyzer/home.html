@@ -1,0 +1,488 @@
+{% extends "analyzer/base.html" %}
+
+{% block title %}AIDE-IoT · Dimensionner l’alimentation d’un dispositif IoT{% endblock %}
+
+{% block extra_css %}
+<style>
+    .home {
+        max-width: 980px;
+        padding-top: 48px;
+        padding-bottom: 80px;
+    }
+
+    .intro {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: 40px;
+        align-items: start;
+        padding-bottom: 40px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .intro h1 {
+        margin: 0;
+        font-size: clamp(1.8rem, 3.6vw, 2.5rem);
+        font-weight: 800;
+        line-height: 1.15;
+        letter-spacing: -.03em;
+    }
+
+    .intro p {
+        margin: 16px 0 0;
+        color: var(--ink-2);
+        font-size: 1.05rem;
+        line-height: 1.65;
+    }
+
+    .intro-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+    }
+
+    .intro-aside {
+        padding: 18px 20px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        font-size: .9rem;
+    }
+
+    .intro-aside h2 {
+        margin: 0 0 10px;
+        font-size: .95rem;
+        font-weight: 700;
+    }
+
+    .intro-aside ul {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--ink-2);
+        line-height: 1.7;
+    }
+
+    .recent {
+        margin-top: 32px;
+    }
+
+    .recent h2,
+    .block h2 {
+        margin: 0 0 6px;
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: -.02em;
+    }
+
+    .block {
+        margin-top: 56px;
+    }
+
+    .block > p {
+        max-width: 700px;
+        margin: 0 0 22px;
+        color: var(--muted);
+        line-height: 1.6;
+    }
+
+    .recent-list a {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 16px;
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .recent-list a + a {
+        border-top: 1px solid var(--border-soft);
+    }
+
+    .recent-list a:hover {
+        background: #fafbfc;
+    }
+
+    .recent-list span {
+        color: var(--muted);
+        font-size: .86rem;
+    }
+
+    .prepare {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px 28px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .prepare li {
+        display: flex;
+        gap: 12px;
+        line-height: 1.55;
+    }
+
+    .prepare li::before {
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        margin-top: 3px;
+        border: 2px solid var(--primary);
+        border-radius: 4px;
+        content: "";
+    }
+
+    .prepare small {
+        display: block;
+        color: var(--muted);
+    }
+
+    .guide {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: step;
+    }
+
+    .guide > li {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) minmax(0, 320px);
+        gap: 18px;
+        padding: 22px 0;
+        border-top: 1px solid var(--border);
+        counter-increment: step;
+    }
+
+    .guide > li::before {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--primary);
+        color: #fff;
+        font-weight: 800;
+        content: counter(step);
+    }
+
+    .guide h3 {
+        margin: 6px 0 6px;
+        font-size: 1.05rem;
+        font-weight: 700;
+    }
+
+    .guide p {
+        margin: 0;
+        color: var(--ink-2);
+        line-height: 1.6;
+    }
+
+    .guide .tip {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: .88rem;
+    }
+
+    .example {
+        align-self: start;
+        padding: 12px 14px;
+        border-left: 3px solid var(--primary);
+        border-radius: 0 8px 8px 0;
+        background: var(--surface);
+        font-size: .84rem;
+        line-height: 1.6;
+    }
+
+    .example b {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--muted);
+        font-size: .76rem;
+        font-weight: 600;
+    }
+
+    .example table {
+        width: 100%;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .example td {
+        padding: 1px 0;
+    }
+
+    .example td + td {
+        text-align: right;
+    }
+
+    .result-text {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 24px;
+    }
+
+    .result-text h3 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .result-text p {
+        margin: 0;
+        color: var(--ink-2);
+        font-size: .92rem;
+        line-height: 1.6;
+    }
+
+    .faq details {
+        border-top: 1px solid var(--border);
+    }
+
+    .faq details:last-child {
+        border-bottom: 1px solid var(--border);
+    }
+
+    .faq summary {
+        padding: 16px 0;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .faq details p {
+        max-width: 760px;
+        margin: 0 0 18px;
+        color: var(--ink-2);
+        line-height: 1.65;
+    }
+
+    .final {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 56px;
+        padding: 24px 28px;
+        border-radius: var(--radius-lg);
+        background: var(--primary-soft);
+    }
+
+    .final p {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+    }
+
+    @media (max-width: 860px) {
+        .intro,
+        .result-text {
+            grid-template-columns: 1fr;
+        }
+
+        .guide > li {
+            grid-template-columns: 44px minmax(0, 1fr);
+        }
+
+        .example {
+            grid-column: 2;
+        }
+
+        .prepare {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="home container">
+
+    <section class="intro">
+        <div>
+            <h1>Combien consomme votre carte IoT, et quelle batterie et quel panneau lui faut-il&nbsp;?</h1>
+            <p>
+                Vous décrivez vos composants et la façon dont votre programme les fait
+                travailler. AIDE-IoT calcule la consommation réelle sur 24&nbsp;heures, puis
+                vérifie votre batterie et votre panneau solaire, ou vous en propose un
+                adapté. Chaque conseil est accompagné du calcul qui le justifie.
+            </p>
+            <div class="intro-actions">
+                {% if user.is_authenticated %}
+                    <a class="ui-btn ui-btn-lg" href="{% url 'wizard_project' %}">Commencer une analyse</a>
+                    <a class="ui-btn ui-btn-lg ui-btn-ghost" href="#guide">Lire le guide</a>
+                {% else %}
+                    <a class="ui-btn ui-btn-lg" href="{% url 'register' %}">Créer un compte gratuit</a>
+                    <a class="ui-btn ui-btn-lg ui-btn-ghost" href="#guide">Comment ça marche</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <aside class="intro-aside">
+            <h2>En bref</h2>
+            <ul>
+                <li>7 étapes, environ 10 minutes</li>
+                <li>Résultat en 1 à 2 minutes</li>
+                <li>Ensoleillement réel du site (PVGIS)</li>
+                <li>IA locale : vos données restent chez vous</li>
+            </ul>
+        </aside>
+    </section>
+
+    {% if projects %}
+    <section class="recent">
+        <h2>Reprendre là où vous en étiez</h2>
+        <div class="card-ui recent-list mt-3">
+            {% for p in projects|slice:":4" %}
+                <a href="{% if p.status == 'completed' %}{% url 'report' p.id %}{% else %}{% url 'wizard_project_edit' p.id %}{% endif %}">
+                    <strong>{{ p.name }}</strong>
+                    <span>{% if p.status == 'completed' %}Rapport prêt{% else %}Brouillon{% endif %} · {{ p.created_at|date:"d/m/Y" }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="block">
+        <h2>Avant de commencer, ayez sous la main</h2>
+        <p>Rien n’est bloquant : vous pourrez revenir sur chaque étape plus tard. Mais avec ces éléments, l’analyse sera juste du premier coup.</p>
+        <ul class="prepare">
+            <li><div>Les fiches techniques de vos composants<small>Pour relever les courants de chaque mode (veille, mesure, émission…).</small></div></li>
+            <li><div>Le déroulé de votre programme<small>Combien de temps dure chaque phase, et toutes les combien de minutes la carte se réveille.</small></div></li>
+            <li><div>Le lieu d’installation<small>Une ville suffit ; des coordonnées GPS, c’est encore mieux.</small></div></li>
+            <li><div>Votre batterie et votre panneau, si vous en avez déjà<small>Capacité, tension, puissance. Ils seront vérifiés avant tout remplacement.</small></div></li>
+            <li><div>Le code source, si vous l’avez<small>Facultatif. Il aide à expliquer les phases du cycle.</small></div></li>
+            <li><div>Une idée de l’ombrage<small>Plein soleil, ombre partielle, sous des arbres… La part de lumière reçue change tout.</small></div></li>
+        </ul>
+    </section>
+
+    <section class="block" id="guide">
+        <h2>Le guide, étape par étape</h2>
+        <p>À droite de chaque étape, ce qu’on a saisi pour un vrai nœud LoRa déployé en forêt (LoRa-E5 et capteur BME688).</p>
+
+        <ol class="guide">
+            <li>
+                <div>
+                    <h3>Décrivez le projet et son emplacement</h3>
+                    <p>Un nom, une courte description et le lieu. Le lieu sert à récupérer l’ensoleillement réel, mois par mois.</p>
+                    <p class="tip">Si vous ne connaissez pas les coordonnées, laissez-les vides : elles sont retrouvées à partir de la ville.</p>
+                </div>
+                <div class="example"><b>Exemple</b>Nœud LoRa forestier · Tunisie · extérieur</div>
+            </li>
+            <li>
+                <div>
+                    <h3>Ajoutez le microcontrôleur et ses modes</h3>
+                    <p>Pour chaque mode, notez le courant, la durée et combien de fois il revient dans un cycle. C’est la partie la plus importante : tout le calcul repose dessus.</p>
+                    <p class="tip">Un cycle, c’est un tour complet du programme : se réveiller, mesurer, envoyer, se rendormir.</p>
+                </div>
+                <div class="example">
+                    <b>LoRa-E5, 3,3 V</b>
+                    <table>
+                        <tr><td>Sommeil</td><td>0,0021 mA · 595 s</td></tr>
+                        <tr><td>Actif (MCU + Rx)</td><td>6,7 mA · 4 s</td></tr>
+                        <tr><td>Émission Tx</td><td>50 mA · 1 s</td></tr>
+                    </table>
+                </div>
+            </li>
+            <li>
+                <div>
+                    <h3>Ajoutez les capteurs et la radio</h3>
+                    <p>Même principe pour chaque capteur et module de communication.</p>
+                    <p class="tip">Attention aux doublons : si votre carte intègre déjà la radio (comme le LoRa-E5), ne la saisissez pas une deuxième fois.</p>
+                </div>
+                <div class="example"><b>BME688, 3,3 V</b>Mesure gaz : 3,9 mA pendant 4 s, une fois par cycle</div>
+            </li>
+            <li>
+                <div>
+                    <h3>Ajoutez ce qui consomme en permanence</h3>
+                    <p>Actionneurs, LED, mais aussi les petites fuites qu’on oublie : un pont diviseur pour mesurer la batterie, par exemple.</p>
+                    <p class="tip">Une fuite de quelques microampères compte quand la carte dort 99 % du temps.</p>
+                </div>
+                <div class="example"><b>Diviseur de tension (3,7 V)</b>0,0123 mA en continu, sur les 600 s du cycle</div>
+            </li>
+            <li>
+                <div>
+                    <h3>Collez votre programme (facultatif)</h3>
+                    <p>L’IA s’en sert pour expliquer les phases du cycle et repérer ce qui consomme inutilement. Elle ne remplace jamais vos chiffres.</p>
+                </div>
+                <div class="example"><b>Exemple</b>Firmware STM32 avec la pile LoRaWAN de ST</div>
+            </li>
+            <li>
+                <div>
+                    <h3>Batterie et panneau : vérifier ou recommander</h3>
+                    <p>Vous avez déjà du matériel ? Choisissez « Vérifier » et entrez ses caractéristiques. Sinon, « Recommander ». Indiquez aussi l’autonomie voulue sans soleil et la part de lumière qui atteint le panneau.</p>
+                    <p class="tip">Sous un couvert forestier dense, seule une petite fraction de la lumière passe : environ 3 %.</p>
+                </div>
+                <div class="example">
+                    <b>Matériel existant</b>
+                    <table>
+                        <tr><td>Batterie</td><td>2 × 18650, 3270 mAh</td></tr>
+                        <tr><td>Panneau</td><td>4 W</td></tr>
+                        <tr><td>Lumière reçue</td><td>3 %</td></tr>
+                    </table>
+                </div>
+            </li>
+            <li>
+                <div>
+                    <h3>Relisez et lancez l’analyse</h3>
+                    <p>Un récapitulatif vous permet de corriger une valeur avant de lancer. Le calcul et les explications prennent une à deux minutes.</p>
+                </div>
+                <div class="example">
+                    <b>Ce qu’on a obtenu</b>
+                    168,4 µA en moyenne, soit 4,04 mAh par jour. Les deux 18650 et le panneau de 4 W sont largement surdimensionnés.
+                </div>
+            </li>
+        </ol>
+    </section>
+
+    <section class="block">
+        <h2>Ce que contient votre rapport</h2>
+        <div class="result-text">
+            <div>
+                <h3>Une réponse claire</h3>
+                <p>« Votre solution est adaptée », « Solution à modifier » ou « Vérification incomplète », suivie de ce qu’il faut faire concrètement.</p>
+            </div>
+            <div>
+                <h3>Les chiffres qui la justifient</h3>
+                <p>Consommation par jour, autonomie, production solaire mois par mois, et la part de chaque mode dans la consommation.</p>
+            </div>
+            <div>
+                <h3>Les sources et les limites</h3>
+                <p>D’où viennent les données, quelles hypothèses ont été faites, et ce qui reste à vérifier sur le terrain.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="block faq">
+        <h2>Questions fréquentes</h2>
+        <details>
+            <summary>Je ne connais pas les courants exacts de mes composants. Comment faire ?</summary>
+            <p>Prenez les valeurs typiques de la fiche technique pour chaque mode. Si vous pouvez mesurer avec un ampèremètre ou un analyseur de puissance, c’est encore mieux : vos mesures sont toujours prioritaires dans le calcul.</p>
+        </details>
+        <details>
+            <summary>Pourquoi le rapport me conseille une batterie plus petite que la mienne ?</summary>
+            <p>Parce qu’une batterie trop grosse coûte plus cher, pèse plus lourd et peut vieillir sans jamais être utilisée. Le rapport ne propose un remplacement que si une taille du commerce nettement plus petite couvre toujours l’autonomie demandée. Sinon, il vous dit de garder la vôtre.</p>
+        </details>
+        <details>
+            <summary>Que fait l’IA, exactement ?</summary>
+            <p>Elle explique les résultats en français et relit votre programme. Elle ne fait aucun calcul : tous les chiffres viennent d’un moteur de calcul vérifiable. Si une phrase de l’IA contient un nombre qui ne vient pas de ce moteur, elle est supprimée avant d’arriver dans votre rapport.</p>
+        </details>
+        <details>
+            <summary>Mes données quittent-elles mon ordinateur ?</summary>
+            <p>Le modèle d’IA tourne en local (Ollama). Seule la position du site est envoyée à PVGIS pour récupérer l’ensoleillement.</p>
+        </details>
+        <details>
+            <summary>Pourquoi mon panneau est jugé avec le mois le plus sombre ?</summary>
+            <p>Parce que le dispositif doit tenir toute l’année. Un panneau dimensionné sur la moyenne annuelle peut manquer d’énergie en décembre. Le rapport montre quand même la production de chaque mois pour que vous voyiez la marge.</p>
+        </details>
+    </section>
+
+    <div class="final">
+        <p>Prêt à essayer avec votre propre carte&nbsp;?</p>
+        {% if user.is_authenticated %}
+            <a class="ui-btn ui-btn-lg" href="{% url 'wizard_project' %}">Commencer une analyse</a>
+        {% else %}
+            <a class="ui-btn ui-btn-lg" href="{% url 'register' %}">Créer un compte</a>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
